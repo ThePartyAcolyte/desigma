@@ -37,6 +37,8 @@ pub struct Options {
     pub gpu: bool,
     /// --bridge: accept MCP tool calls from desigma-mcp for this launch.
     pub bridge: bool,
+    /// --no-bridge: disable the MCP agent bridge for this launch even if saved in Preferences.
+    pub no_bridge: bool,
     /// Force the pixel grid on (it appears from 800% zoom).
     pub grid: bool,
     /// Enter text editing on the first text layer with this name (select it with `--select-text`).
@@ -75,6 +77,10 @@ pub struct Options {
     /// `--dither` of `--export-animation`: Floyd-Steinberg dithering for GIF output (less banding
     /// on gradients, larger file).
     pub dither: bool,
+    /// `--preview-json`: export headless SVG + page/layer metadata as JSON to stdout and exit.
+    pub preview_json: bool,
+    /// `--node ID`: target node id for `--preview-json`.
+    pub node_id: Option<u64>,
     pub help: bool,
     /// Print `desigma <version>` and exit.
     pub version: bool,
@@ -215,6 +221,7 @@ pub fn parse(args: impl IntoIterator<Item = String>) -> Result<Options, String> 
             "--rulers" => o.rulers = true,
             "--gpu" => o.gpu = true,
             "--bridge" => o.bridge = true,
+            "--no-bridge" => o.no_bridge = true,
             "--grid" => o.grid = true,
             "--zoom" => {
                 let v = it.next().ok_or("--zoom needs a percentage (e.g. 800)")?;
@@ -247,6 +254,12 @@ pub fn parse(args: impl IntoIterator<Item = String>) -> Result<Options, String> 
             "--dev-demo" => o.dev_demo = true,
             "--motion" => o.motion = true,
             "--seed-library" => o.seed_library = Some(it.next().ok_or("--seed-library needs a directory")?.into()),
+            "--preview-json" => o.preview_json = true,
+            "--node" => {
+                let raw = it.next().ok_or("--node needs a numeric node id")?;
+                let id = raw.parse::<u64>().map_err(|_| format!("invalid node id '{raw}'"))?;
+                o.node_id = Some(id);
+            }
             "-h" | "--help" => o.help = true,
             "-V" | "--version" => o.version = true,
             "--print-library-path" => o.print_library_path = true,

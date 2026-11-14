@@ -67,7 +67,7 @@ impl Shell {
         let screenshot = opts.screenshot.is_some();
         // "Open in new window" children leave update checks to the first window
         let launch = !screenshot && opts.open_id.is_none();
-        let (gpu_flag, bridge_flag, library) = (opts.gpu, opts.bridge, opts.library.clone());
+        let (gpu_flag, bridge_flag, no_bridge_flag, library) = (opts.gpu, opts.bridge, opts.no_bridge, opts.library.clone());
         // Saved UI language, else the system one on an interactive launch (screenshots stay English
         // unless a language was saved).
         crate::i18n::set(crate::i18n::startup(library.as_deref(), !screenshot));
@@ -105,7 +105,7 @@ impl Shell {
         }
         // --bridge turns the agent bridge on for this launch only; the Preferences toggle saves it
         let saved_bridge = library.as_deref().and_then(|l| crate::comments::settings::load_flag(l, crate::bridge::FLAG)) == Some(true);
-        if launch && (bridge_flag || saved_bridge) {
+        if launch && !no_bridge_flag && (bridge_flag || saved_bridge) {
             if let Err(e) = shell.app.start_bridge(&cc.egui_ctx) {
                 shell.app.show_toast(e, true);
             }

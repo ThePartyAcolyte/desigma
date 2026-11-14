@@ -209,7 +209,10 @@ impl Session {
         }
         match (self.mode, self.discovery.as_deref().and_then(crate::live::probe_at)) {
             (Some(Mode::Editor), None) => {
-                return Err("Editor bridge is off; turn it on again (Preferences → Allow MCP agents to control this editor) or restart desigma-mcp".into())
+                // Editor was closed or bridge disabled: fall back cleanly to an isolated file session.
+                self.mode = Some(Mode::File);
+                self.dirty = false;
+                self.path = None;
             }
             (Some(Mode::File), Some(_)) if self.dirty && name != "desigma_save_file" => {
                 return Err(

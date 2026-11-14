@@ -96,6 +96,85 @@ fn attach_parent_console() {
     }
 }
 
+fn kind_label(kind: &desigma_doc::NodeKind) -> String {
+    let raw = format!("{kind:?}");
+    raw.split(['(', '{', ' ']).next().unwrap_or("Node").to_string()
+}
+
+fn collect_layers(
+    doc: &desigma_doc::Document,
+    node_id: desigma_doc::NodeId,
+    depth: usize,
+    out: &mut Vec<serde_json::Value>,
+) {
+    if out.len() >= 400 || depth > 5 {
+        return;
+    }
+    let Some(node) = doc.get(node_id) else {
+        return;
+    };
+    out.push(serde_json::json!({
+        "id": node.id.0,
+        "name": node.name,
+        "kind": kind_label(&node.kind),
+        "depth": depth,
+        "has_children": !node.children.is_empty(),
+    }));
+    for child in &node.children {
+        collect_layers(doc, *child, depth + 1, out);
+    }
+}
+
+fn run_preview_json(file: &std::path::Path, requested_node: Option<u64>) -> Result<String, String> {
+    let doc = io::load_path(file)?;
+    let pages: Vec<serde_json::Value> = doc
+        .pages
+        .iter()
+        .filter_map(|pid| doc.get(*pid))
+        .map(|p| serde_json::json!({ "id": p.id.0, "name": p.name }))
+        .collect();
+
+    let default_page = doc.pages.first().copied().unwrap_or(desigma_doc::NodeId(0));
+    let target_id = requested_node
+        .map(desigma_doc::NodeId)
+        .filter(|id| doc.get(*id).is_some())
+        .unwrap_or(default_page);
+
+    // Find which page contains target_id so the layer tree always shows that page's hierarchy.
+    let active_page_id = if doc.pages.contains(&target_id) {
+        target_id
+    } else {
+        doc.pages
+            .iter()
+            .copied()
+            .find(|pid| doc.is_ancestor(*pid, target_id))
+            .unwrap_or(default_page)
+    };
+
+    let mut layers = Vec::new();
+    if let Some(page_node) = doc.get(active_page_id) {
+        for child in &page_node.children {
+            collect_layers(&doc, *child, 0, &mut layers);
+        }
+    }
+
+    let font_report = desigma_fonts::ensure_fonts(&doc, &desigma_fonts::FontCache::new());
+    for loaded in font_report.loaded {
+        desigma_export::register_font(loaded.data);
+    }
+
+    let svg = desigma_export::export_svg(&doc, target_id, &desigma_export::SvgOptions::default());
+    let payload = serde_json::json!({
+        "name": doc.name,
+        "active_page_id": active_page_id.0,
+        "selected_node_id": target_id.0,
+        "pages": pages,
+        "layers": layers,
+        "svg": svg,
+    });
+    serde_json::to_string(&payload).map_err(|e| format!("Failed to serialize preview JSON: {e}"))
+}
+
 fn main() {
     crash::install();
     #[cfg(all(windows, not(debug_assertions), not(test)))]
@@ -135,6 +214,20 @@ fn main() {
             Ok(()) => println!("desigma: wrote the showcase sample files to {}", dir.display()),
             Err(e) => {
                 eprintln!("desigma: cannot seed {}: {e}", dir.display());
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+    if opts.preview_json {
+        let Some(file) = &opts.file else {
+            eprintln!("desigma: --preview-json requires a file path");
+            std::process::exit(2);
+        };
+        match run_preview_json(file, opts.node_id) {
+            Ok(json_out) => println!("{json_out}"),
+            Err(e) => {
+                eprintln!("desigma: {e}");
                 std::process::exit(1);
             }
         }
