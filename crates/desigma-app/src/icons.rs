@@ -602,15 +602,23 @@ pub fn paint(p: &Painter, icon: Icon, center: Pos2, size: f32, col: Color32) {
     }
 }
 
-/// The brand mark (hand-drawn, ours): a rounded square with a white "d".
+/// The One-Ship Designer brand mark loaded from `assets/icon/oneship-designer-256.png`.
 fn paint_logo(p: &Painter, center: Pos2, size: f32) {
-    let k = size / 16.0;
-    let o = Pos2::new(center.x - size / 2.0, center.y - size / 2.0);
-    let pt = |x: f32, y: f32| Pos2::new(o.x + x * k, o.y + y * k);
-    p.rect_filled(Rect::from_min_size(pt(1.0, 1.0), Vec2::new(14.0 * k, 14.0 * k)), 4.0 * k, theme::LOGO_GRADIENT_A);
-    p.circle_filled(pt(6.5, 9.5), 3.2 * k, Color32::WHITE);
-    p.rect_filled(Rect::from_min_size(pt(8.9, 3.5), Vec2::new(1.8 * k, 9.2 * k)), 0.9 * k, Color32::WHITE);
-    p.circle_filled(pt(6.5, 9.5), 1.4 * k, theme::LOGO_GRADIENT_A);
+    let ctx = p.ctx();
+    let id = egui::Id::new("oneship-designer-logo");
+    let tex = ctx.data(|d| d.get_temp::<TextureHandle>(id)).or_else(|| {
+        const PNG: &[u8] = include_bytes!("../../../assets/icon/oneship-designer-256.png");
+        let img = image::load_from_memory_with_format(PNG, image::ImageFormat::Png).ok()?.into_rgba8();
+        let (w, h) = img.dimensions();
+        let ci = egui::ColorImage::from_rgba_unmultiplied([w as usize, h as usize], img.as_raw());
+        let handle = ctx.load_texture("oneship-designer-logo", ci, TextureOptions::LINEAR);
+        ctx.data_mut(|d| d.insert_temp(id, handle.clone()));
+        Some(handle)
+    });
+    if let Some(tex) = tex {
+        let rect = Rect::from_center_size(center, Vec2::splat(size));
+        p.image(tex.id(), rect, Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)), Color32::WHITE);
+    }
 }
 
 #[cfg(test)]

@@ -470,7 +470,7 @@ fn main_nodes(app: &App) -> Vec<Node> {
     let help = vec![
         leaf("Command palette", "Ctrl+K", Action::OpenPalette),
         leaf("Keyboard shortcuts", "", Action::Shortcuts).sep(),
-        leaf("About desigma", "", Action::AboutDesigma),
+        leaf(&format!("About {}", crate::theme::display_title()), "", Action::AboutDesigma),
         leaf(&format!("Version {}", crate::VERSION), "", Action::About).off(true),
         leaf("Check for updates…", "", Action::CheckForUpdates),
         leaf("desigma on GitHub", "", Action::OpenGithub),
