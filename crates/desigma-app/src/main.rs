@@ -75,9 +75,9 @@ fn window_icon() -> Option<egui::IconData> {
     // the squircle needs the same transparent margin the .icns has; elsewhere the edge-to-edge art
     // fills title bars and taskbars as intended.
     #[cfg(target_os = "macos")]
-    const PNG: &[u8] = include_bytes!("../../../assets/icon/desigma.iconset/icon_256x256.png");
+    const PNG: &[u8] = include_bytes!("../../../assets/icon/oneship-designer-256.png");
     #[cfg(not(target_os = "macos"))]
-    const PNG: &[u8] = include_bytes!("../../../assets/icon/png/icon_256.png");
+    const PNG: &[u8] = include_bytes!("../../../assets/icon/oneship-designer-256.png");
     let img = image::load_from_memory_with_format(PNG, image::ImageFormat::Png).ok()?.into_rgba8();
     let (width, height) = img.dimensions();
     Some(egui::IconData { rgba: img.into_raw(), width, height })

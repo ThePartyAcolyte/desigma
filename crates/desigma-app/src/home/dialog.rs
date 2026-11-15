@@ -173,12 +173,7 @@ impl App {
     pub fn show_about(&mut self) {
         let mut lines = vec![
             (
-                // A renamed build still says where it comes from.
-                if crate::theme::display_title() == crate::theme::APP_TITLE {
-                    "desigma is a free, open-source design editor written in Rust.".to_string()
-                } else {
-                    format!("{} is based on desigma, a free, open-source design editor written in Rust.", crate::theme::display_title())
-                },
+                format!("{} is based on desigma, a free, open-source design editor written in Rust.", crate::theme::display_title()),
                 String::new(),
             ),
             (

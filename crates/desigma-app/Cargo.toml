@@ -1,12 +1,12 @@
 [package]
 name = "desigma-app"
-description = "desigma desktop editor"
+description = "One-Ship Designer desktop editor (based on desigma)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [[bin]]
-name = "desigma"
+name = "oneship-designer"
 path = "src/main.rs"
 
 [features]
